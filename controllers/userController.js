@@ -6,12 +6,14 @@ import nodemailer from 'nodemailer';
 
 const otpStore = {};
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  family: 4,
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    family: 4,
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
 });
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
