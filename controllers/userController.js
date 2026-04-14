@@ -2,24 +2,19 @@ import User from "../models/User.js";
 import Organization from "../models/Organization.js";
 import Admin from "../models/Admin.js";
 import jwt from "jsonwebtoken";
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 const otpStore = {};
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,  // SSL na 465
-    family: 4,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: "30d",
   });
 };
+
+
+
 
 /* =========================
    REGISTER
@@ -147,15 +142,13 @@ export const sendMfa = async (req, res) => {
     try {
         const { email } = req.body;
         console.log('[MFA] sendMfa called with email:', email);
-        console.log('[MFA] EMAIL_USER:', process.env.EMAIL_USER);
-        console.log('[MFA] EMAIL_PASS exists:', !!process.env.EMAIL_PASS);
 
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         otpStore[email] = { code: otp, expiresAt: Date.now() + 10 * 60 * 1000 };
         console.log('[MFA] OTP generated and stored for:', email);
 
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
+        await resend.emails.send({
+            from: 'onboarding@resend.dev',
             to: email,
             subject: 'Admin verification code',
             html: `<p>Your access code:</p><h2 style="letter-spacing:8px">${otp}</h2><p>Expires in 10 minutes.</p>`,
@@ -166,7 +159,6 @@ export const sendMfa = async (req, res) => {
 
     } catch (error) {
         console.error('[MFA] sendMfa ERROR:', error.message);
-        console.error('[MFA] Full error:', error);
         res.status(500).json({ message: error.message });
     }
 };
